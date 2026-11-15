@@ -226,6 +226,63 @@
       background: currentColor;
     }
 
+    .offline-scenario {
+      display: grid;
+      grid-template-columns: 35px 1fr auto;
+      align-items: center;
+      gap: 11px;
+      margin-top: 13px;
+      padding: 13px;
+      border: 1px solid #dbc8ef;
+      border-radius: 13px;
+      background: linear-gradient(110deg, #f8f2fd, #fff8f0);
+    }
+
+    .offline-scenario-indicator {
+      display: grid;
+      width: 35px;
+      height: 35px;
+      place-items: center;
+      border-radius: 10px;
+      background: #4d148c;
+      color: #fff;
+      font-size: .78rem;
+      font-weight: 850;
+    }
+
+    .offline-scenario p {
+      margin: 0;
+    }
+
+    .offline-scenario-title {
+      color: #32105c;
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    .offline-scenario-detail {
+      margin-top: 3px !important;
+      color: #6f5b7d;
+      font-size: .68rem;
+      line-height: 1.4;
+    }
+
+    .replay-records {
+      padding: 7px 8px;
+      border: 1px solid #4d148c;
+      border-radius: 7px;
+      background: #fff;
+      color: #4d148c;
+      font: inherit;
+      font-size: .64rem;
+      font-weight: 800;
+    }
+
+    .replay-records:disabled {
+      border-color: #e0d6ea;
+      color: #8d7a9d;
+    }
+
     .section-heading {
       display: flex;
       align-items: center;
@@ -871,6 +928,14 @@
         <div class="metric-footer"><span></span><b id="humidity-next">Next update in 28s</b></div>
       </article>
     </section>
+    <section class="offline-scenario" aria-label="Offline recording scenario">
+      <div class="offline-scenario-indicator">OFF</div>
+      <div>
+        <p class="offline-scenario-title" id="offline-scenario-status">Flight records synchronized</p>
+        <p class="offline-scenario-detail">865 readings were buffered during the Frankfurt–Hong Kong flight and replayed when the tag reconnected on 12 Nov, 06:36.</p>
+      </div>
+      <button class="replay-records" id="replay-offline-records" type="button">Replay</button>
+    </section>
 
     <div class="section-heading">
       <h2>Environmental history</h2><button type="button">Live view</button>
@@ -921,7 +986,9 @@
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Collection registered at German medicine industry</p><p class="route-timeline-meta">5–9 Nov · Frankfurt, Germany</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Transported to Frankfurt Airport Cargo Terminal</p><p class="route-timeline-meta">10 Nov · 08:20</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Air freight departed Frankfurt Airport</p><p class="route-timeline-meta">11 Nov · 09:10</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Tag entered offline recording mode</p><p class="route-timeline-meta">11 Nov · 09:10 · 865 readings buffered locally</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Arrived at Hong Kong International Airport</p><p class="route-timeline-meta">12 Nov · 06:35</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Connection restored and records synchronized</p><p class="route-timeline-meta">12 Nov · 06:36 · 865 readings replayed</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Customs clearance completed</p><p class="route-timeline-meta">14 Nov · 16:20 · Hong Kong Customs</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Local delivery departed Tsing Yi Logistics Area</p><p class="route-timeline-meta">15 Nov · 11:02</p></div></li>
           <li class="route-timeline-item current"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Delivered to City University — AC2, 1st Floor</p><p class="route-timeline-meta">15 Nov · 12:06 · Current location</p></div></li>
@@ -951,6 +1018,13 @@
           <p class="log-title">Location updated</p>
           <p class="log-description">Arrived at City University — AC2, 1st Floor</p>
         </div><time class="log-time">12:06</time>
+      </article>
+      <article class="log-item">
+        <div class="log-icon" style="background:#4d148c"></div>
+        <div>
+          <p class="log-title">Offline records synchronized</p>
+          <p class="log-description">865 flight readings replayed after reconnection</p>
+        </div><time class="log-time">06:36</time>
       </article>
     </section>
     <p class="bottom-note">Temperature and humidity are simulated. New sensor readings appear every 20–40 seconds.</p>
@@ -1192,6 +1266,19 @@
       }
     });
 
+    document.querySelector("#replay-offline-records").addEventListener("click", event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = "Replayed";
+      document.querySelector("#offline-scenario-status").textContent = "Offline records replayed and verified";
+      addLog(
+        "Offline records replayed",
+        "865 buffered flight readings verified after reconnection",
+        "#4d148c",
+        new Date("2026-11-12T06:36:00+08:00")
+      );
+    });
+
     renderChart();
 
     const routeStops = {
@@ -1207,7 +1294,9 @@
       { timestamp: new Date("2026-11-09T15:40:00+01:00"), location: "German medicine industry — Frankfurt", coordinate: [50.1109, 8.6821] },
       { timestamp: new Date("2026-11-10T08:20:00+01:00"), location: "Frankfurt Airport Cargo Terminal", coordinate: [50.0379, 8.5622] },
       { timestamp: new Date("2026-11-11T09:10:00+01:00"), location: "Air freight departed Frankfurt Airport", coordinate: [50.0379, 8.5622] },
+      { timestamp: new Date("2026-11-11T09:10:00+01:00"), location: "Offline recording started — 865 readings buffered", coordinate: [50.0379, 8.5622] },
       { timestamp: new Date("2026-11-12T06:35:00+08:00"), location: "Hong Kong International Airport", coordinate: routeStops.airport },
+      { timestamp: new Date("2026-11-12T06:36:00+08:00"), location: "Connection restored — 865 readings synchronized", coordinate: routeStops.airport },
       { timestamp: new Date("2026-11-13T09:00:00+08:00"), location: "Hong Kong Customs — Air Cargo Terminal", coordinate: [22.3157, 113.9274] },
       { timestamp: new Date("2026-11-14T16:20:00+08:00"), location: "Hong Kong Customs clearance completed", coordinate: [22.3157, 113.9274] }
     ];
