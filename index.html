@@ -1,0 +1,1353 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0e1b31" />
+  <title>FedEX ParcelPulse Monitor</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
+    crossorigin="" />
+  <style>
+    :root {
+      --ink: #eaf2ff;
+      --muted: #9fb0c9;
+      --surface: #172640;
+      --surface-soft: #1c2d4a;
+      --line: #2a405f;
+      --blue: #4d148c;
+      --mint: #ff8c00;
+      --amber: #ff6200;
+      --coral: #ff7b78;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+      min-height: 100vh;
+      background: #e9edf3;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .phone {
+      width: min(100%, 430px);
+      min-height: 100vh;
+      margin: auto;
+      padding: 18px 16px 34px;
+      background: #f7f9fc;
+      color: #172033;
+    }
+
+    .status-bar,
+    .section-heading,
+    .route-label,
+    .metric-footer,
+    .log-time {
+      color: #71809a;
+      font-size: 0.72rem;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 6px 20px;
+      color: #5e6f8b;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 3px 0 4px;
+      font-size: 1.7rem;
+      letter-spacing: -0.055em;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: #71809a;
+      font-size: 0.78rem;
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 10px;
+      border: 1px solid #f4c38a;
+      border-radius: 999px;
+      background: #fff5e8;
+      color: #d85d00;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 0 4px rgba(85, 225, 189, 0.12);
+    }
+
+    .shipment {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0 16px;
+      padding: 15px;
+      border: 1px solid #e3e8f0;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(24, 39, 67, .03);
+    }
+
+    .package-icon {
+      display: grid;
+      width: 39px;
+      height: 39px;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 10px;
+      background: #f1eafa;
+      color: #4d148c;
+    }
+
+    .shipment p {
+      margin: 0;
+    }
+
+    .shipment-name {
+      font-size: 0.9rem;
+      font-weight: 750;
+    }
+
+    .shipment-detail {
+      margin-top: 3px !important;
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .chevron {
+      margin-left: auto;
+      color: #90a0b8;
+      font-size: 1.2rem;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .metric {
+      position: relative;
+      overflow: hidden;
+      min-height: 172px;
+      padding: 15px;
+      border: 1px solid #e3e8f0;
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .metric::after {
+      position: absolute;
+      right: -24px;
+      bottom: -42px;
+      width: 105px;
+      height: 105px;
+      border: 13px solid currentColor;
+      border-radius: 50%;
+      content: "";
+      opacity: 0.08;
+    }
+
+    .metric.temperature {
+      color: var(--amber);
+    }
+
+    .metric.humidity {
+      color: var(--blue);
+    }
+
+    .metric-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .metric-icon {
+      color: currentColor;
+      font-size: 1.1rem;
+    }
+
+    .metric-value {
+      margin: 17px 0 5px;
+      color: #172033;
+      font-size: 2rem;
+      font-weight: 760;
+      letter-spacing: -0.08em;
+    }
+
+    .metric-unit {
+      margin-left: 3px;
+      color: #71809a;
+      font-size: 0.86rem;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .metric-footer {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .metric-footer span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 27px 2px 11px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      color: #172033;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .section-heading button {
+      border: 0;
+      background: transparent;
+      color: var(--blue);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 750;
+    }
+
+    .map-card,
+    .history-card {
+      overflow: hidden;
+      border: 1px solid #e3e8f0;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(24, 39, 67, .03);
+    }
+
+    .map {
+      position: relative;
+      height: 218px;
+      overflow: hidden;
+      background: #d9e7e7;
+    }
+
+    .map::before {
+      position: absolute;
+      inset: -20px;
+      content: "";
+      background:
+        linear-gradient(110deg, transparent 47%, rgba(181, 222, 222, 0.3) 48%, rgba(181, 222, 222, 0.3) 52%, transparent 53%),
+        repeating-linear-gradient(15deg, transparent 0 22px, rgba(174, 218, 231, 0.12) 23px 25px, transparent 26px 48px),
+        repeating-linear-gradient(100deg, transparent 0 35px, rgba(174, 218, 231, 0.1) 36px 38px, transparent 39px 67px);
+      transform: rotate(-3deg) scale(1.1);
+    }
+
+    .water {
+      position: absolute;
+      inset: 0 53% 0 0;
+      background: linear-gradient(125deg, #1a5b88, #28709a);
+      opacity: 0.88;
+      clip-path: polygon(0 0, 76% 0, 100% 34%, 62% 65%, 82% 100%, 0 100%);
+    }
+
+    .route {
+      position: absolute;
+      top: 83px;
+      left: 67px;
+      width: 237px;
+      height: 67px;
+      border-top: 4px solid #1675c4;
+      border-radius: 50% 50% 0 0;
+      transform: rotate(-14deg);
+    }
+
+    .route::after {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #1675c4;
+      box-shadow: 0 0 0 4px rgba(22, 117, 196, .23);
+      content: "";
+    }
+
+    .pin {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      background: #d95c5c;
+      box-shadow: 0 1px 5px rgba(4, 12, 24, .35);
+    }
+
+    .pin.start {
+      top: 84px;
+      left: 67px;
+      background: #1675c4;
+    }
+
+    .pin.end {
+      top: 48px;
+      right: 51px;
+    }
+
+    .map-label {
+      position: absolute;
+      color: #cbe8ee;
+      font-size: 0.63rem;
+      font-weight: 750;
+      text-shadow: 0 1px 3px #10223a;
+    }
+
+    .airport {
+      left: 18px;
+      top: 113px;
+    }
+
+    .tsing-yi {
+      left: 168px;
+      top: 35px;
+    }
+
+    .kowloon {
+      right: 20px;
+      bottom: 19px;
+    }
+
+    #real-map {
+      height: 218px;
+      z-index: 1;
+      background: #031421;
+    }
+
+    #real-map::before,
+    #real-map .water,
+    #real-map .route,
+    #real-map .pin,
+    #real-map .map-label {
+      display: none;
+    }
+
+    .leaflet-control-attribution {
+      font-size: 8px !important;
+    }
+
+    #real-map .leaflet-control-zoom {
+      margin: 10px;
+      border: 1px solid #1a527a;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+    }
+
+    #real-map .leaflet-control-zoom a {
+      width: 28px;
+      height: 28px;
+      border-color: #1a527a;
+      background: rgba(4, 25, 42, .94);
+      color: #92d8ff;
+      line-height: 27px;
+    }
+
+    #real-map .leaflet-control-zoom a:hover {
+      background: #0c3a5d;
+      color: #fff;
+    }
+
+    #real-map .leaflet-control-attribution {
+      background: rgba(3, 18, 30, .84);
+      color: #7893a7;
+    }
+
+    #real-map .leaflet-control-attribution a {
+      color: #67bfe9;
+    }
+
+    #real-map .leaflet-tooltip {
+      border: 1px solid #1b6f9c;
+      border-radius: 4px;
+      background: rgba(3, 28, 48, .96);
+      color: #dff4ff;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, .45);
+      font-weight: 650;
+    }
+
+    #real-map .leaflet-tooltip-top::before {
+      border-top-color: #1b6f9c;
+    }
+
+    #real-map .leaflet-overlay-pane path {
+      filter: drop-shadow(0 0 3px rgba(231, 251, 194, .95)) drop-shadow(0 0 9px rgba(93, 210, 216, .65));
+    }
+
+    .stop-pin {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: max-content;
+      padding: 6px 9px;
+      border: 1px solid #2d7297;
+      border-radius: 4px;
+      background: rgba(3, 29, 48, .96);
+      color: #d7efff;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, .4);
+      font-size: .65rem;
+      font-weight: 750;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+
+    .stop-pin::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #57a9d1;
+      box-shadow: 0 0 5px rgba(87, 169, 209, .8);
+      content: "";
+    }
+
+    .stop-pin.current {
+      border-color: #ff8c00;
+      background: rgba(12, 49, 56, .98);
+      color: #f0ffd7;
+      box-shadow: 0 0 0 3px rgba(109, 217, 197, .16), 0 3px 12px rgba(0, 0, 0, .48);
+    }
+
+    .stop-pin.current::before {
+      background: #ff8c00;
+      box-shadow: 0 0 7px rgba(231, 251, 194, 1);
+    }
+
+    .map-route-error {
+      position: absolute;
+      z-index: 700;
+      right: 9px;
+      bottom: 24px;
+      max-width: 220px;
+      padding: 7px 9px;
+      border-radius: 6px;
+      background: rgba(115, 36, 44, .9);
+      color: #fff;
+      font-size: .68rem;
+      line-height: 1.35;
+    }
+
+    .route-details { padding: 6px 15px 10px; }
+    .route-timeline { display: grid; margin: 0; padding: 0; list-style: none; }
+    .route-timeline-item { display: grid; grid-template-columns: 12px 1fr; gap: 11px; min-height: 52px; }
+    .route-timeline-marker { position: relative; width: 12px; }
+    .route-timeline-marker::before { position: absolute; top: 8px; left: 2px; width: 7px; height: 7px; border: 2px solid #8da6ba; border-radius: 50%; background: #fff; content: ""; }
+    .route-timeline-marker::after { position: absolute; top: 19px; bottom: -1px; left: 5px; width: 1px; background: #dce5ed; content: ""; }
+    .route-timeline-item:last-child .route-timeline-marker::after { display: none; }
+    .route-timeline-item.current .route-timeline-marker::before { border-color: #ff6200; background: #ff8c00; box-shadow: 0 0 0 4px rgba(255, 140, 0, .16); }
+    .route-timeline-copy { padding: 3px 0 10px; }
+    .route-timeline-title { margin: 0; color: #25364f; font-size: .79rem; font-weight: 750; }
+    .route-timeline-item.current .route-timeline-title { color: #117254; }
+    .route-timeline-meta { margin: 2px 0 0; color: #71809a; font-size: .68rem; }
+
+    .history-card {
+      padding: 14px 14px 10px;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 12px;
+      color: #71809a;
+      font-size: .7rem;
+      font-weight: 700;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 5px;
+      border-radius: 50%;
+    }
+
+    .timeframes {
+      display: flex;
+      gap: 6px;
+      margin: 0 -2px 13px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .timeframes::-webkit-scrollbar {
+      display: none;
+    }
+
+    .timeframe-button {
+      flex: 0 0 auto;
+      padding: 6px 9px;
+      border: 1px solid #dfe6ef;
+      border-radius: 7px;
+      background: #fff;
+      color: #71809a;
+      font: inherit;
+      font-size: .67rem;
+      font-weight: 750;
+    }
+
+    .timeframe-button[aria-pressed="true"] {
+      border-color: #4d148c;
+      background: #f1eafa;
+      color: #4d148c;
+    }
+
+    .chart {
+      width: 100%;
+      height: 152px;
+      overflow: visible;
+    }
+
+    .chart-grid {
+      stroke: #e9edf3;
+      stroke-width: 1;
+    }
+
+    .temp-line {
+      fill: none;
+      stroke: #ff6200;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .humidity-line {
+      fill: none;
+      stroke: #4d148c;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .chart-label {
+      fill: #8794aa;
+      font-size: 8px;
+      font-family: inherit;
+    }
+
+    .chart-footer {
+      display: flex;
+      justify-content: space-between;
+      margin: 1px 2px 0;
+      color: #8794aa;
+      font-size: .65rem;
+    }
+
+    .chart-inspector {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 36px;
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #f3f6fa;
+      color: #4a5d77;
+      font-size: .7rem;
+    }
+
+    .chart-inspector strong {
+      display: block;
+      color: #1d2c43;
+      font-size: .74rem;
+    }
+
+    .chart-inspector[data-alert="true"] {
+      border-left: 3px solid #d95c5c;
+      background: #fff3f2;
+      color: #a23d3d;
+    }
+
+    .chart-inspector[data-alert="true"] strong {
+      color: #992e2e;
+    }
+
+    .chart-point {
+      fill: transparent;
+      stroke: transparent;
+      cursor: pointer;
+    }
+
+    .chart-point.anomaly {
+      fill: #d95c5c;
+      stroke: #fff;
+      stroke-width: 2;
+    }
+
+    .chart-hover-line {
+      stroke: #9eabbc;
+      stroke-width: 1;
+      stroke-dasharray: 3 3;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .chart-hover-line.visible {
+      visibility: visible;
+    }
+
+    .shipment-start-line {
+      stroke: #ff8c00;
+      stroke-width: 1;
+      stroke-dasharray: 4 3;
+      visibility: hidden;
+    }
+
+    .shipment-start-label {
+      fill: #4d148c;
+      font-size: 8px;
+      font-family: inherit;
+      font-weight: 750;
+      visibility: hidden;
+    }
+
+    .shipment-start-line.visible,
+    .shipment-start-label.visible {
+      visibility: visible;
+    }
+
+    .environment-alert {
+      display: none;
+      margin-top: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: #fff3f2;
+      color: #a23d3d;
+      font-size: .7rem;
+      font-weight: 700;
+    }
+
+    .environment-alert.visible {
+      display: block;
+    }
+
+    .verification-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 13px 15px;
+      border: 1px solid #dbc8ef;
+      border-radius: 12px;
+      background: linear-gradient(110deg, #f8f2fd, #fff8f0);
+    }
+
+    .verification-label {
+      margin: 0 0 3px;
+      color: #71809a;
+      font-size: .66rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+    }
+
+    .verification-code {
+      margin: 0;
+      color: #4d148c;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .9rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+
+    .copy-code {
+      flex: 0 0 auto;
+      padding: 7px 9px;
+      border: 1px solid #4d148c;
+      border-radius: 7px;
+      background: #fff;
+      color: #4d148c;
+      font: inherit;
+      font-size: .68rem;
+      font-weight: 800;
+    }
+
+    .route-itinerary {
+      margin: 0;
+      padding: 2px 15px 14px 42px;
+      color: #506078;
+      font-size: .74rem;
+      line-height: 1.55;
+    }
+
+    .route-itinerary strong {
+      color: #263650;
+      font-weight: 750;
+    }
+
+    .location-history {
+      margin: 0 15px 15px;
+      border-top: 1px solid #e8edf3;
+    }
+
+    .location-history summary {
+      padding: 12px 0 2px;
+      color: #4d148c;
+      cursor: pointer;
+      font-size: .74rem;
+      font-weight: 750;
+    }
+
+    .location-history p {
+      margin: 6px 0 0;
+      color: #71809a;
+      font-size: .68rem;
+    }
+
+    .location-trace {
+      display: grid;
+      max-height: 190px;
+      margin: 9px 0 0;
+      overflow-y: auto;
+    }
+
+    .location-trace-item {
+      display: grid;
+      grid-template-columns: 45px 1fr;
+      gap: 8px;
+      padding: 7px 0;
+      border-top: 1px solid #eef2f6;
+      color: #516178;
+      font-size: .7rem;
+    }
+
+    .location-trace-item time {
+      color: #4d148c;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 750;
+    }
+
+    .location-coordinate {
+      display: block;
+      margin-top: 2px;
+      color: #8a98aa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .64rem;
+    }
+
+    .log-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .log-item {
+      display: grid;
+      grid-template-columns: 8px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #e3e8f0;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .log-icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d95c5c;
+    }
+
+    .log-title {
+      margin: 0;
+      font-size: 0.82rem;
+      font-weight: 750;
+    }
+
+    .log-description {
+      margin: 2px 0 0;
+      color: #71809a;
+      font-size: 0.72rem;
+    }
+
+    .log-time {
+      font-size: 0.66rem;
+      white-space: nowrap;
+    }
+
+    .bottom-note {
+      margin: 22px auto 0;
+      color: #71809a;
+      font-size: 0.68rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    @media (min-width: 431px) {
+      body {
+        padding: 24px 0;
+      }
+
+      .phone {
+        min-height: calc(100vh - 48px);
+        border: 1px solid #dde4ee;
+        border-radius: 28px;
+        box-shadow: 0 22px 65px rgba(24, 39, 67, .12);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="phone">
+    <div class="status-bar"><span id="phone-time">09:41</span><span>LTE&nbsp;&nbsp;•••</span></div>
+    <header>
+      <div>
+        <p class="eyebrow">Shipment environment</p>
+        <h1>ParcelPulse</h1>
+      </div>
+      <span class="live-pill"><i class="live-dot"></i> LIVE</span>
+    </header>
+
+    <section class="shipment" aria-label="Tracked shipment">
+      <div class="package-icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="m3.5 7.5 8.5 4.7 8.5-4.7M12 12.2v9M4 7.7v8.6l8 4.5 8-4.5V7.7l-8-4.4-8 4.4Z" />
+        </svg>
+      </div>
+      <div>
+        <p class="shipment-name">Cold-chain parcel</p>
+        <p class="shipment-detail">PP-HK-2048 · Delivered</p>
+      </div>
+      <span class="chevron">›</span>
+    </section>
+    <section class="verification-card" aria-label="Item verification code">
+      <div>
+        <p class="verification-label">ITEM VERIFICATION CODE</p>
+        <p class="verification-code" id="verification-code">PP-2048-AC2-7K4D</p>
+      </div>
+      <button class="copy-code" id="copy-code" type="button">Copy code</button>
+    </section>
+
+    <section class="metrics" aria-label="Live environment readings">
+      <article class="metric temperature">
+        <div class="metric-label">TEMPERATURE</div>
+        <div class="metric-value"><span id="temperature">22.1</span><span class="metric-unit">°C</span></div>
+        <div class="metric-footer"><span></span><b id="temp-next">Next update in 28s</b></div>
+      </article>
+      <article class="metric humidity">
+        <div class="metric-label">HUMIDITY</div>
+        <div class="metric-value"><span id="humidity">60</span><span class="metric-unit">%</span></div>
+        <div class="metric-footer"><span></span><b id="humidity-next">Next update in 28s</b></div>
+      </article>
+    </section>
+
+    <div class="section-heading">
+      <h2>Environmental history</h2><button type="button">Live view</button>
+    </div>
+    <section class="history-card" aria-label="Continuous temperature and humidity history">
+      <div class="chart-legend">
+        <span><i class="legend-dot" style="background:#ff6200"></i>Temperature °C</span>
+        <span><i class="legend-dot" style="background:#4d148c"></i>Humidity %</span>
+      </div>
+      <div class="timeframes" role="group" aria-label="Environmental history time range">
+        <button class="timeframe-button" type="button" data-frame="1m" aria-pressed="true">1 min</button>
+        <button class="timeframe-button" type="button" data-frame="1h" aria-pressed="false">1 hour</button>
+        <button class="timeframe-button" type="button" data-frame="12h" aria-pressed="false">12 hours</button>
+        <button class="timeframe-button" type="button" data-frame="1d" aria-pressed="false">1 day</button>
+        <button class="timeframe-button" type="button" data-frame="1w" aria-pressed="false">1 week</button>
+        <button class="timeframe-button" type="button" data-frame="1mo" aria-pressed="false">1 month</button>
+      </div>
+      <svg class="chart" viewBox="0 0 340 152" role="img"
+        aria-label="Line chart showing recent temperature and humidity readings">
+        <line class="chart-grid" x1="0" x2="340" y1="24" y2="24" />
+        <line class="chart-grid" x1="0" x2="340" y1="72" y2="72" />
+        <line class="chart-grid" x1="0" x2="340" y1="120" y2="120" />
+        <path id="temperature-path" class="temp-line"></path>
+        <path id="humidity-path" class="humidity-line"></path>
+        <line class="chart-hover-line" id="chart-hover-line" y1="20" y2="132"></line>
+        <line class="chart-hover-line" id="chart-hover-horizontal" x1="10" x2="330"></line>
+        <line class="shipment-start-line" id="shipment-start-line" y1="20" y2="132"></line>
+        <text class="shipment-start-label" id="shipment-start-label" y="30">Shipment started · 1 Nov</text>
+        <g id="chart-points"></g>
+        <text class="chart-label" id="temp-max-label" x="0" y="18">23°C</text><text class="chart-label"
+          id="temp-min-label" x="0" y="138">21°C</text>
+        <text class="chart-label" id="humidity-max-label" x="312" y="18">65%</text><text class="chart-label"
+          id="humidity-min-label" x="312" y="138">55%</text>
+      </svg>
+      <div class="chart-footer"><span id="chart-start">1 min ago</span><span>Now</span></div>
+      <div class="chart-inspector" id="chart-inspector"><span>Tap the chart to inspect a point</span></div>
+      <div class="environment-alert" id="environment-alert" role="status"></div>
+    </section>
+
+    <div class="section-heading">
+      <h2>Route tracking</h2><button type="button" id="view-full-route">View route</button>
+    </div>
+    <section class="map-card" aria-label="Route from Hong Kong International Airport to City University">
+      <div class="map" id="real-map"
+        aria-label="Interactive OpenStreetMap route from Hong Kong International Airport to City University"></div>
+      <div class="route-details">
+        <ol class="route-timeline" aria-label="Shipment tracking events">
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Collection registered at German medicine industry</p><p class="route-timeline-meta">5–9 Nov · Frankfurt, Germany</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Transported to Frankfurt Airport Cargo Terminal</p><p class="route-timeline-meta">10 Nov · 08:20</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Air freight departed Frankfurt Airport</p><p class="route-timeline-meta">11 Nov · 09:10</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Arrived at Hong Kong International Airport</p><p class="route-timeline-meta">12 Nov · 06:35</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Customs clearance completed</p><p class="route-timeline-meta">14 Nov · 16:20 · Hong Kong Customs</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Local delivery departed Tsing Yi Logistics Area</p><p class="route-timeline-meta">15 Nov · 11:02</p></div></li>
+          <li class="route-timeline-item current"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Delivered to City University — AC2, 1st Floor</p><p class="route-timeline-meta">15 Nov · 12:06 · Current location</p></div></li>
+        </ol>
+      </div>
+      <details class="location-history">
+        <summary>Shipment location history</summary>
+        <p>International milestones are recorded from 5 Nov. The final Hong Kong delivery leg is recorded at one-minute intervals.</p>
+        <div class="location-trace" id="location-trace"></div>
+      </details>
+    </section>
+
+    <div class="section-heading">
+      <h2>Event log</h2><button type="button" id="clear-log">Clear</button>
+    </div>
+    <section class="log-list" id="log-list" aria-live="polite">
+      <article class="log-item">
+        <div class="log-icon"></div>
+        <div>
+          <p class="log-title">Shock detected</p>
+          <p class="log-description">Hard impact recorded — 3.2g</p>
+        </div><time class="log-time">11:48</time>
+      </article>
+      <article class="log-item">
+        <div class="log-icon" style="background:#ff8c00"></div>
+        <div>
+          <p class="log-title">Location updated</p>
+          <p class="log-description">Arrived at City University — AC2, 1st Floor</p>
+        </div><time class="log-time">12:06</time>
+      </article>
+    </section>
+    <p class="bottom-note">Temperature and humidity are simulated. New sensor readings appear every 20–40 seconds.</p>
+  </main>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
+    crossorigin=""></script>
+  <script>
+    const temperature = document.querySelector("#temperature");
+    const humidity = document.querySelector("#humidity");
+    const tempNext = document.querySelector("#temp-next");
+    const humidityNext = document.querySelector("#humidity-next");
+    const logList = document.querySelector("#log-list");
+    const temperaturePath = document.querySelector("#temperature-path");
+    const humidityPath = document.querySelector("#humidity-path");
+    const chartStart = document.querySelector("#chart-start");
+    const chart = document.querySelector(".chart");
+    const chartPoints = document.querySelector("#chart-points");
+    const chartHoverLine = document.querySelector("#chart-hover-line");
+    const chartHoverHorizontal = document.querySelector("#chart-hover-horizontal");
+    const shipmentStartLine = document.querySelector("#shipment-start-line");
+    const shipmentStartLabel = document.querySelector("#shipment-start-label");
+    const chartInspector = document.querySelector("#chart-inspector");
+    const environmentAlert = document.querySelector("#environment-alert");
+    const tempMaxLabel = document.querySelector("#temp-max-label");
+    const tempMinLabel = document.querySelector("#temp-min-label");
+    const humidityMaxLabel = document.querySelector("#humidity-max-label");
+    const humidityMinLabel = document.querySelector("#humidity-min-label");
+    const timeframeButtons = document.querySelectorAll(".timeframe-button");
+    const locationTraceElement = document.querySelector("#location-trace");
+    let temperatureValue = 22.1;
+    let humidityValue = 60;
+    let secondsToUpdate = randomInterval();
+    let selectedFrame = "1m";
+    let activeTemperatureDomain = [21, 23];
+    const trackingCompletedAt = new Date("2026-11-15T12:06:00+08:00");
+    let simulatedReadingTime = new Date(trackingCompletedAt);
+    const shipmentStartedAt = new Date("2026-11-01T08:30:00+08:00");
+    const readingHistory = [21.8, 21.9, 22.1, 22.0, 22.2, 22.1, 22.3, 22.2, 22.0, 22.1]
+      .map((temperature, index) => ({
+        temperature,
+        humidity: [58, 59, 61, 60, 62, 59, 60, 61, 58, 60][index],
+        timestamp: new Date(trackingCompletedAt.getTime() - (9 - index) * 6500)
+      }));
+    const frameSettings = {
+      "1m": { label: "1 min ago", durationMinutes: 1, temperatureAmplitude: 0.25, humidityAmplitude: 3 },
+      "1h": { label: "1 hour ago", durationMinutes: 60, temperatureAmplitude: 0.45, humidityAmplitude: 5 },
+      "12h": { label: "12 hours ago", durationMinutes: 720, temperatureAmplitude: 0.8, humidityAmplitude: 7 },
+      "1d": { label: "1 day ago", durationMinutes: 1440, temperatureAmplitude: 1.1, humidityAmplitude: 8 },
+      "1w": { label: "1 week ago", durationMinutes: 10080, temperatureAmplitude: 1.5, humidityAmplitude: 9 },
+      "1mo": { label: "15 Oct", durationMinutes: 43200, temperatureAmplitude: 1.9, humidityAmplitude: 10 }
+    };
+    let displayedHistory = readingHistory;
+
+    function randomInterval() {
+      return Math.floor(Math.random() * 21) + 20;
+    }
+
+    function formatTime(date = new Date()) {
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+    }
+
+    function addLog(title, description, accent = "#4d148c", timestamp = simulatedReadingTime) {
+      const entry = document.createElement("article");
+      entry.className = "log-item";
+      entry.innerHTML = `<div class="log-icon" style="background:${accent}"></div><div><p class="log-title">${title}</p><p class="log-description">${description}</p></div><time class="log-time">${formatTime(timestamp)}</time>`;
+      logList.prepend(entry);
+    }
+
+    function makePath(values, minimum, maximum) {
+      let previousValueMissing = true;
+      return values.map((value, index) => {
+        if (value === null) {
+          previousValueMissing = true;
+          return "";
+        }
+        const x = 10 + index * (320 / (values.length - 1));
+        const y = 132 - ((value - minimum) / (maximum - minimum)) * 112;
+        const command = previousValueMissing ? "M" : "L";
+        previousValueMissing = false;
+        return `${command}${x.toFixed(1)} ${y.toFixed(1)}`;
+      }).join(" ");
+    }
+
+    function historyForFrame(frame) {
+      if (frame === "1m") return readingHistory;
+      const { durationMinutes, temperatureAmplitude, humidityAmplitude } = frameSettings[frame];
+      return Array.from({ length: 10 }, (_, index) => ({
+        temperature: frame === "1mo" && new Date(trackingCompletedAt.getTime() - (9 - index) * (durationMinutes * 60000 / 9)) < shipmentStartedAt
+          ? null
+          : index === 6 ? 26 : 22 + Math.sin(index * 0.92 + temperatureAmplitude) * temperatureAmplitude,
+        humidity: frame === "1mo" && new Date(trackingCompletedAt.getTime() - (9 - index) * (durationMinutes * 60000 / 9)) < shipmentStartedAt
+          ? null
+          : index === 6 ? 80 : 60 + Math.cos(index * 0.78 + humidityAmplitude) * humidityAmplitude * 0.5,
+        timestamp: new Date(trackingCompletedAt.getTime() - (9 - index) * (durationMinutes * 60000 / 9))
+      }));
+    }
+
+    function chartDomain(values, padding, minimumFloor, maximumCeiling) {
+      return [
+        Math.max(minimumFloor, Math.floor(Math.min(...values) - padding)),
+        Math.min(maximumCeiling, Math.ceil(Math.max(...values) + padding))
+      ];
+    }
+
+    function formatReadingTime(timestamp) {
+      return timestamp.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+    }
+
+    function inspectReading(index) {
+      const reading = displayedHistory[index];
+      if (reading.temperature === null) {
+        chartHoverLine.classList.remove("visible");
+        chartHoverHorizontal.classList.remove("visible");
+        chartInspector.dataset.alert = "false";
+        chartInspector.innerHTML = `<span><strong>${formatReadingTime(reading.timestamp)}</strong>No tag data available before shipment start.</span><span>Not shipped</span>`;
+        return;
+      }
+      const alert = reading.temperature >= 26 || reading.humidity >= 80;
+      const x = 10 + index * (320 / (displayedHistory.length - 1));
+      const y = 132 - ((reading.temperature - activeTemperatureDomain[0]) / (activeTemperatureDomain[1] - activeTemperatureDomain[0])) * 112;
+      chartHoverLine.setAttribute("x1", x);
+      chartHoverLine.setAttribute("x2", x);
+      chartHoverHorizontal.setAttribute("y1", y);
+      chartHoverHorizontal.setAttribute("y2", y);
+      chartHoverLine.classList.add("visible");
+      chartHoverHorizontal.classList.add("visible");
+      chartInspector.dataset.alert = String(alert);
+      chartInspector.innerHTML = `<span><strong>${formatReadingTime(reading.timestamp)}</strong>${reading.temperature.toFixed(1)}°C · ${Math.round(reading.humidity)}% RH</span><span>${alert ? "Out of range" : "Within range"}</span>`;
+    }
+
+    function renderChart() {
+      displayedHistory = historyForFrame(selectedFrame);
+      const temperatures = displayedHistory.map(reading => reading.temperature).filter(value => value !== null);
+      const humidities = displayedHistory.map(reading => reading.humidity).filter(value => value !== null);
+      const [temperatureMin, temperatureMax] = chartDomain(temperatures, 0.5, 18, 30);
+      const [humidityMin, humidityMax] = chartDomain(humidities, 3, 35, 90);
+      activeTemperatureDomain = [temperatureMin, temperatureMax];
+      temperaturePath.setAttribute("d", makePath(displayedHistory.map(reading => reading.temperature), temperatureMin, temperatureMax));
+      humidityPath.setAttribute("d", makePath(displayedHistory.map(reading => reading.humidity), humidityMin, humidityMax));
+      tempMaxLabel.textContent = `${temperatureMax}°C`;
+      tempMinLabel.textContent = `${temperatureMin}°C`;
+      humidityMaxLabel.textContent = `${humidityMax}%`;
+      humidityMinLabel.textContent = `${humidityMin}%`;
+      chartPoints.innerHTML = "";
+      displayedHistory.forEach((reading, index) => {
+        if (reading.temperature === null) return;
+        const x = 10 + index * (320 / (displayedHistory.length - 1));
+        const y = 132 - ((reading.temperature - temperatureMin) / (temperatureMax - temperatureMin)) * 112;
+        const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        point.setAttribute("cx", x);
+        point.setAttribute("cy", y);
+        point.setAttribute("r", reading.temperature >= 26 || reading.humidity >= 80 ? "5" : "3");
+        point.classList.add("chart-point");
+        if (reading.temperature >= 26 || reading.humidity >= 80) point.classList.add("anomaly");
+        point.addEventListener("click", event => { event.stopPropagation(); inspectReading(index); });
+        chartPoints.append(point);
+      });
+      const anomaly = displayedHistory.find(reading => reading.temperature !== null && (reading.temperature >= 26 || reading.humidity >= 80));
+      environmentAlert.classList.toggle("visible", Boolean(anomaly));
+      environmentAlert.textContent = anomaly ? `Environmental alert: ${anomaly.temperature.toFixed(1)}°C and ${Math.round(anomaly.humidity)}% RH recorded at ${formatReadingTime(anomaly.timestamp)}.` : "";
+      chartStart.textContent = frameSettings[selectedFrame].label;
+      const firstTrackedIndex = displayedHistory.findIndex(reading => reading.timestamp >= shipmentStartedAt);
+      const showShipmentStart = selectedFrame === "1mo" && firstTrackedIndex !== -1;
+      shipmentStartLine.classList.toggle("visible", showShipmentStart);
+      shipmentStartLabel.classList.toggle("visible", showShipmentStart);
+      if (showShipmentStart) {
+        const x = 10 + firstTrackedIndex * (320 / (displayedHistory.length - 1));
+        shipmentStartLine.setAttribute("x1", x);
+        shipmentStartLine.setAttribute("x2", x);
+        shipmentStartLabel.setAttribute("x", Math.min(x + 4, 225));
+      }
+      inspectReading(displayedHistory.length - 1);
+      chartHoverLine.classList.remove("visible");
+      chartHoverHorizontal.classList.remove("visible");
+    }
+
+    function updateSensors() {
+      temperatureValue = Math.min(22.8, Math.max(21.3, temperatureValue + (Math.random() * 0.2 + 0.1) * (Math.random() < 0.5 ? -1 : 1)));
+      humidityValue = Math.min(65, Math.max(55, humidityValue + Math.round((Math.random() * 4 + 1) * (Math.random() < 0.5 ? -1 : 1))));
+      temperature.textContent = temperatureValue.toFixed(1);
+      humidity.textContent = humidityValue;
+      simulatedReadingTime = new Date(simulatedReadingTime.getTime() + 60000);
+      readingHistory.push({ temperature: temperatureValue, humidity: humidityValue, timestamp: new Date(simulatedReadingTime) });
+      if (readingHistory.length > 10) readingHistory.shift();
+      renderChart();
+      addLog("Sensor reading updated", `${temperatureValue.toFixed(1)}°C · ${humidityValue}% relative humidity`);
+      secondsToUpdate = randomInterval();
+    }
+
+    setInterval(() => {
+      document.querySelector("#phone-time").textContent = formatTime();
+      secondsToUpdate -= 1;
+      if (secondsToUpdate <= 0) updateSensors();
+      const nextLabel = `Next update in ${secondsToUpdate}s`;
+      tempNext.textContent = nextLabel;
+      humidityNext.textContent = nextLabel;
+    }, 1000);
+
+    document.querySelector("#clear-log").addEventListener("click", () => {
+      logList.innerHTML = "";
+    });
+
+    timeframeButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        selectedFrame = button.dataset.frame;
+        timeframeButtons.forEach(timeframe => {
+          timeframe.setAttribute("aria-pressed", String(timeframe === button));
+        });
+        renderChart();
+      });
+    });
+
+    chart.addEventListener("click", event => {
+      const bounds = chart.getBoundingClientRect();
+      const percentage = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width));
+      inspectReading(Math.round(percentage * (displayedHistory.length - 1)));
+    });
+    chart.addEventListener("pointermove", event => {
+      const bounds = chart.getBoundingClientRect();
+      const percentage = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width));
+      inspectReading(Math.round(percentage * (displayedHistory.length - 1)));
+    });
+    chart.addEventListener("pointerleave", () => {
+      chartHoverLine.classList.remove("visible");
+      chartHoverHorizontal.classList.remove("visible");
+    });
+
+    document.querySelector("#copy-code").addEventListener("click", async event => {
+      const code = document.querySelector("#verification-code").textContent;
+      const button = event.currentTarget;
+      try {
+        await navigator.clipboard.writeText(code);
+        button.textContent = "Copied";
+        setTimeout(() => { button.textContent = "Copy code"; }, 1600);
+      } catch (error) {
+        button.textContent = "Copy unavailable";
+        console.error("Could not copy verification code", error);
+      }
+    });
+
+    renderChart();
+
+    const routeStops = {
+      airport: [22.3080, 113.9185],
+      tsingYi: [22.3505, 114.1060],
+      cityUniversity: [22.3375936, 114.1714779]
+    };
+    const shipmentMilestones = [
+      { timestamp: new Date("2026-11-05T08:30:00+01:00"), location: "German medicine industry — Frankfurt", coordinate: [50.1109, 8.6821] },
+      { timestamp: new Date("2026-11-06T12:00:00+01:00"), location: "German medicine industry — Frankfurt", coordinate: [50.1109, 8.6821] },
+      { timestamp: new Date("2026-11-07T12:00:00+01:00"), location: "German medicine industry — Frankfurt", coordinate: [50.1109, 8.6821] },
+      { timestamp: new Date("2026-11-08T12:00:00+01:00"), location: "German medicine industry — Frankfurt", coordinate: [50.1109, 8.6821] },
+      { timestamp: new Date("2026-11-09T15:40:00+01:00"), location: "German medicine industry — Frankfurt", coordinate: [50.1109, 8.6821] },
+      { timestamp: new Date("2026-11-10T08:20:00+01:00"), location: "Frankfurt Airport Cargo Terminal", coordinate: [50.0379, 8.5622] },
+      { timestamp: new Date("2026-11-11T09:10:00+01:00"), location: "Air freight departed Frankfurt Airport", coordinate: [50.0379, 8.5622] },
+      { timestamp: new Date("2026-11-12T06:35:00+08:00"), location: "Hong Kong International Airport", coordinate: routeStops.airport },
+      { timestamp: new Date("2026-11-13T09:00:00+08:00"), location: "Hong Kong Customs — Air Cargo Terminal", coordinate: [22.3157, 113.9274] },
+      { timestamp: new Date("2026-11-14T16:20:00+08:00"), location: "Hong Kong Customs clearance completed", coordinate: [22.3157, 113.9274] }
+    ];
+    const map = L.map("real-map", {
+      zoomControl: true,
+      scrollWheelZoom: true,
+      touchZoom: true,
+      doubleClickZoom: true,
+      attributionControl: true
+    });
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 19,
+      maxNativeZoom: 16,
+      attribution: "Tiles &copy; Esri"
+    }).addTo(map);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 19,
+      maxNativeZoom: 16,
+      attribution: ""
+    }).addTo(map);
+    const markerIcon = (label, current = false) => L.divIcon({
+      className: "",
+      html: `<span class="stop-pin${current ? " current" : ""}">${label}</span>`,
+      iconSize: null,
+      iconAnchor: [8, 24]
+    });
+    L.marker(routeStops.airport, { icon: markerIcon("HKIA") }).addTo(map).bindTooltip("Hong Kong International Airport");
+    L.marker(routeStops.tsingYi, { icon: markerIcon("Tsing Yi") }).addTo(map).bindTooltip("Tsing Yi Logistic Area");
+    L.marker(routeStops.cityUniversity, { icon: markerIcon("Current · AC2 1/F", true) }).addTo(map).bindTooltip("City University — AC2, 1st Floor");
+    shipmentMilestones.forEach((milestone, index) => {
+      L.circleMarker(milestone.coordinate, {
+        radius: index === 0 || index === 5 || index === 7 ? 4 : 2,
+        color: "#5baed7",
+        weight: 1,
+        fillColor: "#5baed7",
+        fillOpacity: 0.85
+      }).addTo(map).bindTooltip(`${formatReadingTime(milestone.timestamp)} · ${milestone.location}`);
+    });
+    L.polyline([shipmentMilestones[6].coordinate, shipmentMilestones[7].coordinate], {
+      color: "#4d148c",
+      weight: 2,
+      dashArray: "6 7",
+      opacity: 0.8
+    }).addTo(map).bindTooltip("Air freight: Frankfurt to Hong Kong");
+    map.setView(routeStops.cityUniversity, 17);
+    document.querySelector("#view-full-route").addEventListener("click", () => {
+      const globalRouteBounds = L.latLngBounds([
+        ...shipmentMilestones.map(milestone => milestone.coordinate),
+        routeStops.cityUniversity
+      ]);
+      map.fitBounds(globalRouteBounds, { padding: [24, 24] });
+    });
+
+    function locationNameForProgress(progress) {
+      if (progress < 0.12) return "Airport Road";
+      if (progress < 0.28) return "North Lantau Highway";
+      if (progress < 0.44) return "Tsing Ma Bridge";
+      if (progress < 0.58) return "Tsing Yi Logistic Area";
+      if (progress < 0.74) return "Route 3";
+      if (progress < 0.89) return "Boundary Street";
+      if (progress < 0.98) return "Tat Chee Avenue";
+      return "City University — AC2, 1st Floor";
+    }
+
+    function formatLocationTime(timestamp) {
+      return timestamp.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+    }
+
+    function renderMinuteLocationTrace(roadCoordinates) {
+      const checkpointCount = 65;
+      const routeStartedAt = new Date(trackingCompletedAt.getTime() - (checkpointCount - 1) * 60000);
+      const checkpoints = Array.from({ length: checkpointCount }, (_, index) => {
+        const progress = index / (checkpointCount - 1);
+        const coordinateIndex = Math.round(progress * (roadCoordinates.length - 1));
+        return {
+          coordinate: roadCoordinates[coordinateIndex],
+          location: locationNameForProgress(progress),
+          timestamp: new Date(routeStartedAt.getTime() + index * 60000)
+        };
+      });
+      const locationRecords = [...shipmentMilestones, ...checkpoints];
+      locationTraceElement.innerHTML = locationRecords.map(checkpoint =>
+        `<div class="location-trace-item"><time>${formatLocationTime(checkpoint.timestamp)}</time><span>${checkpoint.location}<small class="location-coordinate">${checkpoint.coordinate[0].toFixed(5)}, ${checkpoint.coordinate[1].toFixed(5)}</small></span></div>`
+      ).join("");
+      checkpoints.forEach((checkpoint, index) => {
+        L.circleMarker(checkpoint.coordinate, {
+          radius: index === checkpoints.length - 1 ? 3.5 : 1.8,
+          color: "#ff8c00",
+          weight: 1,
+          fillColor: "#ff8c00",
+          fillOpacity: index === checkpoints.length - 1 ? 1 : 0.55,
+          interactive: true
+        }).addTo(map).bindTooltip(`${formatTime(checkpoint.timestamp)} · ${checkpoint.location}`);
+      });
+    }
+
+    async function drawDrivingRoute() {
+      const coordinates = [
+        routeStops.airport, routeStops.tsingYi, routeStops.cityUniversity
+      ].map(([latitude, longitude]) => `${longitude},${latitude}`).join(";");
+      const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`);
+      if (!response.ok) {
+        throw new Error(`Routing service returned ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data.routes?.[0]?.geometry?.coordinates?.length) {
+        throw new Error("Routing service did not return a drivable route");
+      }
+      const roadCoordinates = data.routes[0].geometry.coordinates.map(([longitude, latitude]) => [latitude, longitude]);
+      L.polyline(roadCoordinates, { color: "#ff8c00", weight: 3.5, opacity: 0.98 }).addTo(map);
+      renderMinuteLocationTrace(roadCoordinates);
+    }
+
+    async function drawFrankfurtRoadRoute() {
+      const germanOrigin = shipmentMilestones[0].coordinate;
+      const frankfurtAirport = shipmentMilestones[5].coordinate;
+      const coordinates = [germanOrigin, frankfurtAirport]
+        .map(([latitude, longitude]) => `${longitude},${latitude}`).join(";");
+      const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`);
+      if (!response.ok) {
+        throw new Error(`German route service returned ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data.routes?.[0]?.geometry?.coordinates?.length) {
+        throw new Error("German road route service did not return a drivable route");
+      }
+      const roadCoordinates = data.routes[0].geometry.coordinates.map(([longitude, latitude]) => [latitude, longitude]);
+      L.polyline(roadCoordinates, { color: "#4d148c", weight: 3, opacity: 0.9 }).addTo(map).bindTooltip("Road transport: German medicine industry to Frankfurt Airport");
+    }
+
+    function showMapRouteError(error) {
+      const notice = document.createElement("p");
+      notice.className = "map-route-error";
+      notice.textContent = `Driving route unavailable: ${error.message}`;
+      document.querySelector("#real-map").append(notice);
+    }
+
+    drawDrivingRoute().catch(showMapRouteError);
+    drawFrankfurtRoadRoute().catch(showMapRouteError);
+  </script>
+</body>
+
+</html>
