@@ -156,7 +156,7 @@
     .metric {
       position: relative;
       overflow: hidden;
-      min-height: 172px;
+      min-height: 188px;
       padding: 15px;
       border: 1px solid #e3e8f0;
       border-radius: 14px;
@@ -226,6 +226,64 @@
       background: currentColor;
     }
 
+    .temp-state {
+      margin: 0 0 8px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .temp-state.normal {
+      color: #4d148c;
+    }
+
+    .temp-state.excursion {
+      color: #c2410c;
+    }
+
+    .temp-states {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .temp-state-card {
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .temp-state-card p,
+    .temp-state-card span {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 750;
+    }
+
+    .temp-state-card strong {
+      display: block;
+      margin: 4px 0 2px;
+      color: #172033;
+      font-size: 1.15rem;
+      letter-spacing: -0.04em;
+    }
+
+    .temp-state-card.normal {
+      border: 1px solid #dbc8ef;
+    }
+
+    .temp-state-card.excursion {
+      border: 1px solid #ffc89a;
+      background: #fff8f2;
+    }
+
+    .temp-state-card.excursion strong {
+      color: #c2410c;
+    }
+
     .offline-scenario {
       display: grid;
       grid-template-columns: 35px 1fr auto;
@@ -281,6 +339,45 @@
     .replay-records:disabled {
       border-color: #e0d6ea;
       color: #8d7a9d;
+    }
+
+    .gateway-card {
+      display: block;
+    }
+
+    .gateway-head {
+      display: grid;
+      grid-template-columns: 35px 1fr auto;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .gateway-facts {
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .gateway-facts li {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 8px;
+      padding: 6px 0 0;
+      border-top: 1px solid #eadff3;
+      margin-top: 6px;
+      font-size: .66rem;
+      line-height: 1.35;
+    }
+
+    .gateway-facts b {
+      color: #4d148c;
+      font-size: .6rem;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .gateway-facts span {
+      color: #5c4d68;
     }
 
     .section-heading {
@@ -919,7 +1016,8 @@
     <section class="metrics" aria-label="Live environment readings">
       <article class="metric temperature">
         <div class="metric-label">TEMPERATURE</div>
-        <div class="metric-value"><span id="temperature">22.1</span><span class="metric-unit">°C</span></div>
+        <div class="metric-value"><span id="temperature">4.2</span><span class="metric-unit">°C</span></div>
+        <p class="temp-state normal" id="temperature-state">Normal</p>
         <div class="metric-footer"><span></span><b id="temp-next">Next update in 28s</b></div>
       </article>
       <article class="metric humidity">
@@ -928,13 +1026,32 @@
         <div class="metric-footer"><span></span><b id="humidity-next">Next update in 28s</b></div>
       </article>
     </section>
-    <section class="offline-scenario" aria-label="Offline recording scenario">
-      <div class="offline-scenario-indicator">OFF</div>
-      <div>
-        <p class="offline-scenario-title" id="offline-scenario-status">Flight records synchronized</p>
-        <p class="offline-scenario-detail">865 readings were buffered during the Frankfurt–Hong Kong flight and replayed when the tag reconnected on 12 Nov, 06:36.</p>
+    <section class="temp-states" aria-label="Temperature states">
+      <article class="temp-state-card normal">
+        <p>Normal</p>
+        <strong>4.2°C</strong>
+        <span>Within 2–8°C</span>
+      </article>
+      <article class="temp-state-card excursion">
+        <p>Excursion Alert</p>
+        <strong>9.2°C</strong>
+        <span>In-flight peak · 18 min</span>
+      </article>
+    </section>
+    <section class="offline-scenario gateway-card" aria-label="Aviation Gateway">
+      <div class="gateway-head">
+        <div class="offline-scenario-indicator">GW</div>
+        <div>
+          <p class="offline-scenario-title" id="offline-scenario-status">Aviation Gateway</p>
+          <p class="offline-scenario-detail">FAA-compliant unit in the ULD. It powers the tag and stores the audit locally. No external RF while airborne.</p>
+        </div>
+        <button class="replay-records" id="replay-offline-records" type="button">Show sync</button>
       </div>
-      <button class="replay-records" id="replay-offline-records" type="button">Replay</button>
+      <ul class="gateway-facts">
+        <li><b>In flight</b><span>11 Nov 14:22 CET · peak 9.2°C · 18 min. Local record only. Hold cannot be opened.</span></li>
+        <li><b>On landing</b><span>12 Nov 06:36, during taxi. 865 readings auto-synced to ParcelPulse.</span></li>
+        <li><b>Triage</b><span id="gateway-triage">Mild excursion, still usable. Priority 1 unload into the HKIA cold room.</span></li>
+      </ul>
     </section>
 
     <div class="section-heading">
@@ -965,8 +1082,8 @@
         <line class="shipment-start-line" id="shipment-start-line" y1="20" y2="132"></line>
         <text class="shipment-start-label" id="shipment-start-label" y="30">Shipment started · 1 Nov</text>
         <g id="chart-points"></g>
-        <text class="chart-label" id="temp-max-label" x="0" y="18">23°C</text><text class="chart-label"
-          id="temp-min-label" x="0" y="138">21°C</text>
+        <text class="chart-label" id="temp-max-label" x="0" y="18">5°C</text><text class="chart-label"
+          id="temp-min-label" x="0" y="138">3°C</text>
         <text class="chart-label" id="humidity-max-label" x="312" y="18">65%</text><text class="chart-label"
           id="humidity-min-label" x="312" y="138">55%</text>
       </svg>
@@ -986,9 +1103,11 @@
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Collection registered at German medicine industry</p><p class="route-timeline-meta">5–9 Nov · Frankfurt, Germany</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Transported to Frankfurt Airport Cargo Terminal</p><p class="route-timeline-meta">10 Nov · 08:20</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Air freight departed Frankfurt Airport</p><p class="route-timeline-meta">11 Nov · 09:10</p></div></li>
-          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Tag entered offline recording mode</p><p class="route-timeline-meta">11 Nov · 09:10 · 865 readings buffered locally</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Aviation Gateway online — local record, RF held</p><p class="route-timeline-meta">11 Nov · 09:10 · 865 readings stored in the ULD</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">In-flight excursion stored locally</p><p class="route-timeline-meta">11 Nov · 14:22 CET · peak 9.2°C · 18 min</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Arrived at Hong Kong International Airport</p><p class="route-timeline-meta">12 Nov · 06:35</p></div></li>
-          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Connection restored and records synchronized</p><p class="route-timeline-meta">12 Nov · 06:36 · 865 readings replayed</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Gateway auto-sync on taxi</p><p class="route-timeline-meta">12 Nov · 06:36 · 865 readings uploaded to ParcelPulse</p></div></li>
+          <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Priority 1 unload to HKIA cold room</p><p class="route-timeline-meta">12 Nov · 06:37 · mild excursion, product still usable</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Customs clearance completed</p><p class="route-timeline-meta">14 Nov · 16:20 · Hong Kong Customs</p></div></li>
           <li class="route-timeline-item"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Local delivery departed Tsing Yi Logistics Area</p><p class="route-timeline-meta">15 Nov · 11:02</p></div></li>
           <li class="route-timeline-item current"><span class="route-timeline-marker"></span><div class="route-timeline-copy"><p class="route-timeline-title">Delivered to City University — AC2, 1st Floor</p><p class="route-timeline-meta">15 Nov · 12:06 · Current location</p></div></li>
@@ -1022,12 +1141,12 @@
       <article class="log-item">
         <div class="log-icon" style="background:#4d148c"></div>
         <div>
-          <p class="log-title">Offline records synchronized</p>
-          <p class="log-description">865 flight readings replayed after reconnection</p>
+          <p class="log-title">Aviation Gateway synced on taxi</p>
+          <p class="log-description">865 in-flight readings uploaded. Priority 1 cold-room triage issued.</p>
         </div><time class="log-time">06:36</time>
       </article>
     </section>
-    <p class="bottom-note">Temperature and humidity are simulated. New sensor readings appear every 20–40 seconds.</p>
+    <p class="bottom-note">Normal state is 4.2°C. The 9.2°C excursion was stored by the Aviation Gateway in flight, then synced on landing. Live readings update every 20–40 seconds.</p>
   </main>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
@@ -1055,15 +1174,20 @@
     const humidityMinLabel = document.querySelector("#humidity-min-label");
     const timeframeButtons = document.querySelectorAll(".timeframe-button");
     const locationTraceElement = document.querySelector("#location-trace");
-    let temperatureValue = 22.1;
+    const normalTemperature = 4.2;
+    const excursionTemperature = 9.2;
+    const excursionThreshold = 8;
+    const excursionAt = new Date("2026-11-11T14:22:00+01:00");
+    const excursionDurationMinutes = 18;
+    let temperatureValue = normalTemperature;
     let humidityValue = 60;
     let secondsToUpdate = randomInterval();
     let selectedFrame = "1m";
-    let activeTemperatureDomain = [21, 23];
+    let activeTemperatureDomain = [3, 5];
     const trackingCompletedAt = new Date("2026-11-15T12:06:00+08:00");
     let simulatedReadingTime = new Date(trackingCompletedAt);
     const shipmentStartedAt = new Date("2026-11-01T08:30:00+08:00");
-    const readingHistory = [21.8, 21.9, 22.1, 22.0, 22.2, 22.1, 22.3, 22.2, 22.0, 22.1]
+    const readingHistory = [4.0, 4.1, 4.3, 4.2, 4.4, 4.1, 4.3, 4.2, 4.0, 4.2]
       .map((temperature, index) => ({
         temperature,
         humidity: [58, 59, 61, 60, 62, 59, 60, 61, 58, 60][index],
@@ -1112,15 +1236,34 @@
     function historyForFrame(frame) {
       if (frame === "1m") return readingHistory;
       const { durationMinutes, temperatureAmplitude, humidityAmplitude } = frameSettings[frame];
-      return Array.from({ length: 10 }, (_, index) => ({
-        temperature: frame === "1mo" && new Date(trackingCompletedAt.getTime() - (9 - index) * (durationMinutes * 60000 / 9)) < shipmentStartedAt
-          ? null
-          : index === 6 ? 26 : 22 + Math.sin(index * 0.92 + temperatureAmplitude) * temperatureAmplitude,
-        humidity: frame === "1mo" && new Date(trackingCompletedAt.getTime() - (9 - index) * (durationMinutes * 60000 / 9)) < shipmentStartedAt
-          ? null
-          : index === 6 ? 80 : 60 + Math.cos(index * 0.78 + humidityAmplitude) * humidityAmplitude * 0.5,
-        timestamp: new Date(trackingCompletedAt.getTime() - (9 - index) * (durationMinutes * 60000 / 9))
-      }));
+      const points = Array.from({ length: 10 }, (_, index) => {
+        const timestamp = new Date(trackingCompletedAt.getTime() - (9 - index) * (durationMinutes * 60000 / 9));
+        const beforeShipment = frame === "1mo" && timestamp < shipmentStartedAt;
+        return {
+          temperature: beforeShipment ? null : normalTemperature + Math.sin(index * 0.92) * Math.min(temperatureAmplitude, 0.3),
+          humidity: beforeShipment ? null : 60 + Math.cos(index * 0.78 + humidityAmplitude) * humidityAmplitude * 0.35,
+          timestamp
+        };
+      });
+      const windowStart = points[0].timestamp;
+      const windowEnd = points[points.length - 1].timestamp;
+      if (excursionAt >= windowStart && excursionAt <= windowEnd) {
+        let closest = points.findIndex(point => point.temperature !== null);
+        let best = Infinity;
+        points.forEach((point, index) => {
+          if (point.temperature === null) return;
+          const delta = Math.abs(point.timestamp - excursionAt);
+          if (delta < best) {
+            best = delta;
+            closest = index;
+          }
+        });
+        if (closest !== -1) {
+          points[closest].temperature = excursionTemperature;
+          points[closest].timestamp = new Date(excursionAt);
+        }
+      }
+      return points;
     }
 
     function chartDomain(values, padding, minimumFloor, maximumCeiling) {
@@ -1131,6 +1274,7 @@
     }
 
     function formatReadingTime(timestamp) {
+      if (timestamp.getTime() === excursionAt.getTime()) return "11 Nov, 14:22 CET";
       return timestamp.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
     }
 
@@ -1143,7 +1287,7 @@
         chartInspector.innerHTML = `<span><strong>${formatReadingTime(reading.timestamp)}</strong>No tag data available before shipment start.</span><span>Not shipped</span>`;
         return;
       }
-      const alert = reading.temperature >= 26 || reading.humidity >= 80;
+      const alert = reading.temperature >= excursionThreshold;
       const x = 10 + index * (320 / (displayedHistory.length - 1));
       const y = 132 - ((reading.temperature - activeTemperatureDomain[0]) / (activeTemperatureDomain[1] - activeTemperatureDomain[0])) * 112;
       chartHoverLine.setAttribute("x1", x);
@@ -1153,14 +1297,14 @@
       chartHoverLine.classList.add("visible");
       chartHoverHorizontal.classList.add("visible");
       chartInspector.dataset.alert = String(alert);
-      chartInspector.innerHTML = `<span><strong>${formatReadingTime(reading.timestamp)}</strong>${reading.temperature.toFixed(1)}°C · ${Math.round(reading.humidity)}% RH</span><span>${alert ? "Out of range" : "Within range"}</span>`;
+      chartInspector.innerHTML = `<span><strong>${formatReadingTime(reading.timestamp)}</strong>${reading.temperature.toFixed(1)}°C · ${Math.round(reading.humidity)}% RH${alert ? ` · ${excursionDurationMinutes} min` : ""}</span><span>${alert ? "Excursion Alert" : "Normal"}</span>`;
     }
 
     function renderChart() {
       displayedHistory = historyForFrame(selectedFrame);
       const temperatures = displayedHistory.map(reading => reading.temperature).filter(value => value !== null);
       const humidities = displayedHistory.map(reading => reading.humidity).filter(value => value !== null);
-      const [temperatureMin, temperatureMax] = chartDomain(temperatures, 0.5, 18, 30);
+      const [temperatureMin, temperatureMax] = chartDomain(temperatures, 0.6, 0, 12);
       const [humidityMin, humidityMax] = chartDomain(humidities, 3, 35, 90);
       activeTemperatureDomain = [temperatureMin, temperatureMax];
       temperaturePath.setAttribute("d", makePath(displayedHistory.map(reading => reading.temperature), temperatureMin, temperatureMax));
@@ -1177,15 +1321,15 @@
         const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         point.setAttribute("cx", x);
         point.setAttribute("cy", y);
-        point.setAttribute("r", reading.temperature >= 26 || reading.humidity >= 80 ? "5" : "3");
+        point.setAttribute("r", reading.temperature >= excursionThreshold ? "5" : "3");
         point.classList.add("chart-point");
-        if (reading.temperature >= 26 || reading.humidity >= 80) point.classList.add("anomaly");
+        if (reading.temperature >= excursionThreshold) point.classList.add("anomaly");
         point.addEventListener("click", event => { event.stopPropagation(); inspectReading(index); });
         chartPoints.append(point);
       });
-      const anomaly = displayedHistory.find(reading => reading.temperature !== null && (reading.temperature >= 26 || reading.humidity >= 80));
+      const anomaly = displayedHistory.find(reading => reading.temperature !== null && reading.temperature >= excursionThreshold);
       environmentAlert.classList.toggle("visible", Boolean(anomaly));
-      environmentAlert.textContent = anomaly ? `Environmental alert: ${anomaly.temperature.toFixed(1)}°C and ${Math.round(anomaly.humidity)}% RH recorded at ${formatReadingTime(anomaly.timestamp)}.` : "";
+      environmentAlert.textContent = anomaly ? `Excursion Alert: peak ${anomaly.temperature.toFixed(1)}°C at ${formatReadingTime(anomaly.timestamp)}, held ${excursionDurationMinutes} min. Stored by the Aviation Gateway. Normal state is ${normalTemperature.toFixed(1)}°C.` : "";
       chartStart.textContent = frameSettings[selectedFrame].label;
       const firstTrackedIndex = displayedHistory.findIndex(reading => reading.timestamp >= shipmentStartedAt);
       const showShipmentStart = selectedFrame === "1mo" && firstTrackedIndex !== -1;
@@ -1202,10 +1346,18 @@
       chartHoverHorizontal.classList.remove("visible");
     }
 
+    function renderTemperatureState(value) {
+      const state = document.querySelector("#temperature-state");
+      const excursion = value >= excursionThreshold;
+      state.textContent = excursion ? "Excursion Alert" : "Normal";
+      state.className = `temp-state ${excursion ? "excursion" : "normal"}`;
+    }
+
     function updateSensors() {
-      temperatureValue = Math.min(22.8, Math.max(21.3, temperatureValue + (Math.random() * 0.2 + 0.1) * (Math.random() < 0.5 ? -1 : 1)));
+      temperatureValue = Math.min(4.6, Math.max(3.8, temperatureValue + (Math.random() * 0.2 + 0.1) * (Math.random() < 0.5 ? -1 : 1)));
       humidityValue = Math.min(65, Math.max(55, humidityValue + Math.round((Math.random() * 4 + 1) * (Math.random() < 0.5 ? -1 : 1))));
       temperature.textContent = temperatureValue.toFixed(1);
+      renderTemperatureState(temperatureValue);
       humidity.textContent = humidityValue;
       simulatedReadingTime = new Date(simulatedReadingTime.getTime() + 60000);
       readingHistory.push({ temperature: temperatureValue, humidity: humidityValue, timestamp: new Date(simulatedReadingTime) });
@@ -1269,13 +1421,20 @@
     document.querySelector("#replay-offline-records").addEventListener("click", event => {
       const button = event.currentTarget;
       button.disabled = true;
-      button.textContent = "Replayed";
-      document.querySelector("#offline-scenario-status").textContent = "Offline records replayed and verified";
+      button.textContent = "Synced";
+      document.querySelector("#offline-scenario-status").textContent = "Landing sync complete";
+      document.querySelector("#gateway-triage").textContent = "Priority 1 issued. HKIA cold room, not the apron queue. Product still usable.";
       addLog(
-        "Offline records replayed",
-        "865 buffered flight readings verified after reconnection",
+        "Aviation Gateway auto-sync",
+        "Taxi at HKIA. 865 in-flight readings uploaded to ParcelPulse.",
         "#4d148c",
         new Date("2026-11-12T06:36:00+08:00")
+      );
+      addLog(
+        "Priority 1 cold-room triage",
+        "Mild 9.2°C excursion, 18 min. Stability budget still safe.",
+        "#ff6200",
+        new Date("2026-11-12T06:37:00+08:00")
       );
     });
 
@@ -1294,9 +1453,11 @@
       { timestamp: new Date("2026-11-09T15:40:00+01:00"), location: "German medicine industry — Frankfurt", coordinate: [50.1109, 8.6821] },
       { timestamp: new Date("2026-11-10T08:20:00+01:00"), location: "Frankfurt Airport Cargo Terminal", coordinate: [50.0379, 8.5622] },
       { timestamp: new Date("2026-11-11T09:10:00+01:00"), location: "Air freight departed Frankfurt Airport", coordinate: [50.0379, 8.5622] },
-      { timestamp: new Date("2026-11-11T09:10:00+01:00"), location: "Offline recording started — 865 readings buffered", coordinate: [50.0379, 8.5622] },
+      { timestamp: new Date("2026-11-11T09:10:00+01:00"), location: "Aviation Gateway online — local record, RF held", coordinate: [50.0379, 8.5622] },
+      { timestamp: new Date("2026-11-11T14:22:00+01:00"), location: "In-flight excursion stored locally — peak 9.2°C, 18 min", coordinate: [43.2, 68.4] },
       { timestamp: new Date("2026-11-12T06:35:00+08:00"), location: "Hong Kong International Airport", coordinate: routeStops.airport },
-      { timestamp: new Date("2026-11-12T06:36:00+08:00"), location: "Connection restored — 865 readings synchronized", coordinate: routeStops.airport },
+      { timestamp: new Date("2026-11-12T06:36:00+08:00"), location: "Gateway auto-sync on taxi — 865 readings uploaded", coordinate: routeStops.airport },
+      { timestamp: new Date("2026-11-12T06:37:00+08:00"), location: "Priority 1 unload to HKIA cold room", coordinate: routeStops.airport },
       { timestamp: new Date("2026-11-13T09:00:00+08:00"), location: "Hong Kong Customs — Air Cargo Terminal", coordinate: [22.3157, 113.9274] },
       { timestamp: new Date("2026-11-14T16:20:00+08:00"), location: "Hong Kong Customs clearance completed", coordinate: [22.3157, 113.9274] }
     ];
@@ -1335,12 +1496,12 @@
         fillOpacity: 0.85
       }).addTo(map).bindTooltip(`${formatReadingTime(milestone.timestamp)} · ${milestone.location}`);
     });
-    L.polyline([shipmentMilestones[6].coordinate, shipmentMilestones[7].coordinate], {
+    L.polyline([[50.0379, 8.5622], routeStops.airport], {
       color: "#4d148c",
       weight: 2,
       dashArray: "6 7",
       opacity: 0.8
-    }).addTo(map).bindTooltip("Air freight: Frankfurt to Hong Kong");
+    }).addTo(map).bindTooltip("Air freight: Frankfurt to Hong Kong. Aviation Gateway recorded locally. No external RF.");
     map.setView(routeStops.cityUniversity, 17);
     document.querySelector("#view-full-route").addEventListener("click", () => {
       const globalRouteBounds = L.latLngBounds([
